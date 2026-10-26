@@ -32,7 +32,7 @@ phpscan research path/to/src --out-dir report-dir   # scan + markdown/SARIF
 phpscan explain out.json PHPSCAN-0001    # one finding, full reasoning
 phpscan map path/to/src                  # source → transform → sink per function
 phpscan variants path/to/src             # security-genome variant clusters
-phpscan diff baseline.json path/to/src   # fixed / new / unchanged between scans
+phpscan diff out.json path/to/src         # fixed / new / unchanged between two scans
 phpscan benchmark eval                   # run the corpus, print P/R/F1
 phpscan rules list                       # show registries
 ```
@@ -181,8 +181,10 @@ phpscan benchmark eval
 
 runs the shipped eval corpus (`eval/vulnerable`, `eval/clean`,
 `eval/webshell`, plus `eval/patched` fixed variants and `eval/framework`
-multi-file fixtures) and prints per-category precision/recall/F1 plus
-`timing_ms`. The corpus is small and synthetic — it verifies the harness and
+multi-file fixtures) and prints overall precision/recall/F1 plus a
+per-category tp/fp/fn table; the JSON side-report written next to
+`--out` additionally carries `timing_ms` and per-category detail. The
+corpus is small and synthetic — it verifies the harness and
 regression behavior, not real-world coverage. See `docs/claims.md` for
 exactly what is and is not claimed.
 
@@ -196,6 +198,8 @@ exactly what is and is not claimed.
 - [docs/claims.md](docs/claims.md) — what is actually proven backed by tests
 - [docs/differentiation.md](docs/differentiation.md)
 - [docs/limitations.md](docs/limitations.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md) — reporting a vulnerability, authorized-research policy
 
 ## License
 

@@ -14,6 +14,7 @@ venv/
 .venv/
 *.sarif
 phpscan-evidence.json
+phpscan-report/
 phpscan-fusion.json
 phpscan-report.json
 phpscan-report.md
