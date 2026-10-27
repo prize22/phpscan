@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "ruff"]
+dev = ["pytest>=7.0", "pytest-cov", "ruff"]
 
 [project.scripts]
 phpscan = "phpscan.cli:main"
