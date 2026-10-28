@@ -145,6 +145,7 @@ def test_scope_al():
     assert not s.allows("ftp://example.com/x")
 
 
+@pytest.mark.network
 def test_passive_observes_headers_and_robots(srv):
     scope = live.Scope(allow_hosts=["127.0.0.1"], max_requests=8)
     store, summary = live.run_passive(srv.url, scope)
@@ -169,6 +170,7 @@ def test_malformed_port_same_host_does_not_crash():
     assert any(r.category in ("HTTP_UNCERTAIN", "SCOPE_REFUSAL", "DNS_UNCERTAIN") for r in store.records)
 
 
+@pytest.mark.network
 def test_redirect_out_of_scope_recorded():
     s = _Server(
         {
@@ -185,6 +187,7 @@ def test_redirect_out_of_scope_recorded():
         s.stop()
 
 
+@pytest.mark.network
 def test_budget_enforced():
     s = _Server({"/": b"ok"})
     try:
@@ -198,6 +201,7 @@ def test_budget_enforced():
 # -------------------------------------------------------------- probing
 
 
+@pytest.mark.network
 def test_safe_probing_route_touch(srv):
     scope = live.Scope(allow_hosts=["127.0.0.1"], max_requests=32)
     store, summary = probing.run_safe(srv.url, scope)

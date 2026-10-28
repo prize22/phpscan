@@ -40,3 +40,7 @@ target-version = "py39"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not network'"
+markers = [
+    "network: marks tests that require a local HTTP server (integration/probing tests)",
+]
