@@ -23,9 +23,14 @@ verification status. Items with `[verified]` have tests demonstrating them.
  may produce false SQL Injection on custom wrappers.
 
 -[verified] Closure-stored callables resolve concretely
- (`$f = function($v){...}; $f($_GET[x]);`), but a varfunc call on a
- variable assigned other values (e.g. `array_map`-carried callables) is
- unresolvable and stays conservative.
+ (`$f = function($v){...}; $f($_GET[x]);`), and constant callables handed
+ to callable-consuming APIs dispatch into the callee's parameter summary
+ (`array_map('helper', $tainted)` where `helper` reaches a sink). Still
+ open: an *inline* closure used directly as that argument
+ (`array_map(function($v){ system($v); }, $tainted)`) gets no parameter
+ seeding, so the inner sink is not attributed to the call site; array-form
+ callables (`[$obj, 'method']`) and multi-callable APIs (`array_udiff*`,
+ `array_uintersect*`) are not modeled.
 
 -[not fully solved] PHP reflection, `$$` variable variables, and
  `call_user_func` with attacker arrays lower confidence (INDIRECT)

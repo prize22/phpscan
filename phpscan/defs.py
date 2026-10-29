@@ -342,6 +342,40 @@ DYN_DISPATCH_FUNCS = {
     "dynamic_call",
 }
 
+#: Forwarding marker: "every argument after the callable index".
+REST = "rest"
+
+# Callable-consuming APIs: name -> (callable arg index, forwarding map).
+#
+# The forwarding map states how caller data reaches the callable's
+# parameters, as a tuple of (outer argument index, callee parameter index)
+# pairs.  REST expands to every argument after the callable, all landing in
+# parameter 0 (element-wise feeds such as array_map are unary per element).
+# An empty map means the API forwards no caller argument into the callable
+# (the callable's parameters are API-supplied, e.g. an error handler's
+# errno/errstring), so only an attacker-controlled callable itself matters.
+#
+# Constant callables resolve to builtin sinks (system, exec, ...) and to
+# analyzed functions (interprocedural summary replay); tainted callables
+# stay a Code Injection candidate, exactly like call_user_func.
+CALLBACK_FUNCS = {
+    "array_map": (0, ((REST, 0),)),
+    "array_filter": (1, ((0, 0),)),
+    "array_reduce": (1, ((0, 1), (2, 0))),
+    "array_walk": (1, ((0, 0), (2, 2))),
+    "array_walk_recursive": (1, ((0, 0), (2, 2))),
+    "usort": (1, ((0, 0),)),
+    "uasort": (1, ((0, 0),)),
+    "uksort": (1, ((0, 0),)),
+    "preg_replace_callback": (1, ((2, 0),)),
+    "mb_ereg_replace_callback": (1, ((2, 0),)),
+    "register_shutdown_function": (0, ((REST, 0),)),
+    "ob_start": (0, ()),
+    "set_error_handler": (0, ()),
+    "set_exception_handler": (0, ()),
+    "spl_autoload_register": (0, ()),
+}
+
 # constants whose value the engine may treat as a known literal string
 KNOWN_STRING_CONSTS = {
     "__DIR__",

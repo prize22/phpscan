@@ -51,6 +51,15 @@ Secondary analyzers feed the same output model:
 - Dynamic dispatch: `call_user_func[_array]`, `ob_start`, `usort`, etc.
   resolve constant callables or `[$class, $method]` / `'C::m'` string
   forms; unresolvable tainted dispatch stays a Code Injection candidate.
+  Callable-consuming APIs (`array_map`, `array_filter`, `array_reduce`,
+  `array_walk[_recursive]`, `usort`/`uasort`/`uksort`,
+  `preg_replace_callback`, `mb_ereg_replace_callback`,
+  `register_shutdown_function`, `set_error_handler`,
+  `set_exception_handler`, `spl_autoload_register`) forward arguments
+  through a per-API map — e.g. `array_reduce` elements reach `$item`,
+  not `$carry` — so a constant callable is checked against the parameter
+  that actually receives attacker data, and the call site keeps its
+  chain step (`[callable dispatch to …]`) as evidence.
 - Closure-stored callables resolve: `$f = function($v){ mail($v); };
   $f($_GET[x]);` reuses the closure's parameter summary at invocation.
 - Superglobal nuances: `$_FILES['x']['tmp_name'|'error']` is

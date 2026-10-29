@@ -1131,6 +1131,123 @@ class FuncFlow:
                 return "Unsafe File Upload"
         return cat
 
+    def _replay_callee_sinks(self, target, summary, argvals, fwd_map, line):
+        """Replay a callee's parameter-sink summary against caller values.
+
+        ``fwd_map`` pairs a caller argument index with the callee parameter
+        it lands in; ``None`` means direct positional (identity) mapping,
+        which is how ordinary call sites forward their arguments.
+        """
+        if summary is None:
+            return
+        pairs = ((i, i) for i in range(len(argvals))) if fwd_map is None else fwd_map
+        for outer_idx, param_idx in pairs:
+            if outer_idx >= len(argvals):
+                continue
+            v = argvals[outer_idx]
+            if not v.has_taint():
+                continue
+            for hit in summary["sinks"].get(param_idx, ()):
+                vc = v.clone()
+                vc.chain = _chain_join(
+                    v.chain,
+                    (
+                        (
+                            line,
+                            "flows through "
+                            + _short(target.qualified)
+                            + " into sink "
+                            + hit.sink_name
+                            + "  [interprocedural]",
+                        ),
+                    ),
+                )
+                self.mk_candidate(
+                    hit.cat,
+                    "call" if hit.call_kind == "function" else "func-summary",
+                    hit.sink_name,
+                    "",
+                    outer_idx,
+                    hit.line,
+                    sink_expr=_short(hit.sink_expr) + "   (callee " + target.file + ":L" + str(hit.line) + ")",
+                    val=vc,
+                    file_override=target.file,
+                )
+
+    def _callback_dispatch(self, lname, args, argvals, line, callsite_short):
+        """Callable-consuming API: resolve its callable argument.
+
+        Constant callables are dispatched into builtin sinks and into
+        analyzed functions (interprocedural summary replay); a callable
+        taken from attacker input stays an unresolved dynamic call, exactly
+        like the call_user_func family. The call itself keeps flowing
+        through _call_return, so transforms/sanitizers still apply.
+        """
+        cb_idx, fwd_spec = D.CALLBACK_FUNCS[lname]
+        if cb_idx >= len(argvals):
+            return
+        cb_val = argvals[cb_idx]
+        cb_text = (cb_val.const or "").strip()
+        fwd = self._fwd_pairs(cb_idx, fwd_spec, len(argvals))
+        if not cb_text:
+            if cb_val.has_taint():
+                self.mk_candidate(
+                    "Code Injection",
+                    "call",
+                    lname,
+                    "",
+                    cb_idx,
+                    line,
+                    sink_expr=_short(callsite_short) + "  [dynamic callable, unresolved target]",
+                    val=cb_val,
+                )
+                self.push_signal("dyn_dispatch", _short(callsite_short), line)
+            return
+        target = self._resolve_dispatch_callable(cb_text)
+        if target is not None:
+            self._replay_callee_sinks(target, self.engine.summary_for(target), argvals, fwd, line)
+            return
+        self._callback_sink_check(cb_text, args, fwd, line, callsite_short)
+
+    def _callback_sink_check(self, called, args, fwd, line, callsite_short):
+        """A constant callable naming a builtin sink function.
+
+        Mirrors _builtin_sink_check, but the value that reaches the sink is
+        selected by the API's forwarding map instead of assuming the
+        call_user_func "argument 1" layout.
+        """
+        cl = (called or "").strip().lower()
+        if not cl:
+            return
+        for cat, spec in D.SINKS.items():
+            idx = spec["funcs"].get(cl)
+            if idx is None:
+                continue
+            for outer_idx, param_idx in fwd:
+                if idx != -1 and idx != param_idx:
+                    continue
+                if outer_idx >= len(args):
+                    continue
+                v = args[outer_idx][2]
+                if not v.has_taint():
+                    continue
+                note = _short(callsite_short) + "  [callable dispatch to " + cl + "]"
+                vc = v.clone()
+                vc.chain = _chain_join(v.chain, ((line, note),))
+                self.mk_candidate(cat, "call", cl, "", outer_idx, line, sink_expr=note, val=vc)
+                return
+            return
+
+    def _fwd_pairs(self, cb_idx, spec, nargs):
+        """Expand a defs forwarding map into concrete (outer, param) pairs."""
+        pairs = []
+        for outer, param in spec:
+            if outer == D.REST:
+                pairs.extend((j, param) for j in range(cb_idx + 1, nargs))
+            else:
+                pairs.append((outer, param))
+        return pairs
+
     def _resolve_dispatch_callable(self, called):
         if not called:
             return None
@@ -1182,39 +1299,12 @@ class FuncFlow:
                 callsite_short = _short(callsite_short) + " [dispatch -> " + tgt2.qualified + "]"
             else:
                 self._builtin_sink_check(called, args, line, callsite_short)
+        if target is None and lname in D.CALLBACK_FUNCS and args:
+            self._callback_dispatch(lname, args, argvals, line, callsite_short)
         if target is not None:
             summary = self.engine.summary_for(target)
             # replay callee sink summaries with caller taints
-            if summary is not None:
-                for i, v in enumerate(argvals):
-                    if not v.has_taint():
-                        continue
-                    for hit in summary["sinks"].get(i, ()):
-                        vc = v.clone()
-                        vc.chain = _chain_join(
-                            v.chain,
-                            (
-                                (
-                                    line,
-                                    "flows through "
-                                    + _short(target.qualified)
-                                    + " into sink "
-                                    + hit.sink_name
-                                    + "  [interprocedural]",
-                                ),
-                            ),
-                        )
-                        self.mk_candidate(
-                            hit.cat,
-                            "call" if hit.call_kind == "function" else "func-summary",
-                            hit.sink_name,
-                            "",
-                            i,
-                            hit.line,
-                            sink_expr=_short(hit.sink_expr) + "   (callee " + target.file + ":L" + str(hit.line) + ")",
-                            val=vc,
-                            file_override=target.file,
-                        )
+            self._replay_callee_sinks(target, summary, argvals, None, line)
             ret = FlowVal()
             if summary is not None and summary["ret_params"]:
                 for i in summary["ret_params"]:

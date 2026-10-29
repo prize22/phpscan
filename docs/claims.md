@@ -39,6 +39,14 @@ surface: if a claim breaks, it is a bug in phpscan.
     (tested, line-free fingerprints).
 13. **Cache hardening.** Old-schema caches are ignored (tested) and
     pickled data of foreign classes is refused (tested).
+14. **Callable dispatch is analyzed, not skipped.** A constant callable
+    handed to `array_map`/`array_filter`/`usort`/
+    `register_shutdown_function`/… reaches builtin sinks and callee
+    summaries through that API's own argument→parameter map; an
+    attacker-controlled callable becomes a Code Injection candidate;
+    benign callables and APIs that forward no caller argument stay silent
+    (positive, negative, sanitized, interprocedural and determinism tests,
+    plus `eval/` corpus entries).
 
 ## What phpscan ALSO honestly claims (limits)
 
