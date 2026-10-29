@@ -259,3 +259,19 @@ def test_registry_matches_declared_layout(api, callable_idx, fwd):
     idx, spec = D.CALLBACK_FUNCS[api]
     assert idx == callable_idx
     assert bool(spec) is fwd
+
+
+def test_expand_forwarding_maps_rest_and_explicit_pairs():
+    from phpscan import callable_dispatch as CD
+    from phpscan import defs as D
+
+    assert CD.expand_forwarding(0, ((D.REST, 0),), 2) == [(1, 0)]
+    assert CD.expand_forwarding(1, ((0, 1), (2, 0)), 3) == [(0, 1), (2, 0)]
+    assert CD.expand_forwarding(0, (), 1) == []
+
+
+def test_resolve_dispatch_callable_unknown_name_returns_none():
+    from phpscan import callable_dispatch as CD
+
+    eng = E.Engine()
+    assert CD.resolve_dispatch_callable(eng, None, "no_such_callable") is None

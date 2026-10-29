@@ -35,6 +35,9 @@ Secondary analyzers feed the same output model:
 
 ## Taint engine (`engine.py`)
 
+- Callable-argument dispatch (constant callables into builtin sinks /
+  analyzed functions, dynamic callables) is implemented in
+  `callable_dispatch.py`; the engine orchestrates resolution and flow.
 - One `FuncFlow` per callable; `Engine.run` applies fixed-point
   interprocedural iteration (up to 8 passes with a summary-signature
   convergence check; halts earlier when summaries stop changing).
