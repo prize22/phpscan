@@ -22,6 +22,69 @@ python -m pip install -e .
 
 Requirements: Python 3.9+; deps: `tree-sitter`, `tree-sitter-php`, `PyYAML`.
 
+## Docker
+
+Build a self-contained runtime image (no local Python install required):
+
+```bash
+docker build -t phpscan:local .
+```
+
+Version smoke test:
+
+```bash
+docker run --rm phpscan:local --version
+```
+
+### Scanning a host directory
+
+The container's working directory is `/work`. Mount the tree you want to
+review there and pass the **in-container** path — that path is what phpscan
+sees, and it is the only filesystem it can reach:
+
+```bash
+docker run --rm -v "$PWD:/work" phpscan:local scan /work/src
+```
+
+Write reports through the same mount so they land back on the host
+(`--out`, `--sarif-out`, `--out-dir` are resolved inside the container):
+
+```bash
+docker run --rm -v "$PWD:/work" phpscan:local scan /work/src --json --out /work/out.json
+docker run --rm -v "$PWD:/work" phpscan:local scan /work/src --sarif-out /work/out.sarif
+docker run --rm -v "$PWD:/work" phpscan:local research /work/src --out-dir /work/phpscan-report
+```
+
+`./out.json`, `./out.sarif` and `./phpscan-report/` then appear in the
+current host directory. Mount the source read-only if you do not want the
+scanned tree modified by anything else on the host:
+
+```bash
+docker run --rm -v "$PWD/src:/work/src:ro" phpscan:local scan /work/src
+```
+
+### Users and permissions
+
+The image runs as a non-root user (`phpscan`, fixed UID/GID `10001`) rather
+than as root. Reading typical host source trees works unmodified; files the
+container writes into the mount are owned by `10001`, which may not match
+your host user. Run with your own UID/GID to make outputs yours:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" phpscan:local scan /work/src --json --out /work/out.json
+```
+
+### Notes
+
+- **The image ships no PHP interpreter**, and phpscan never executes target
+  PHP — in a container or anywhere else. It parses source with tree-sitter
+  and analyzes the abstract representation.
+- The image installs runtime dependencies only; development extras
+  (`pytest`, `pytest-cov`, `ruff`) are not present.
+- Container-scoped commands such as `investigate` observe the container
+  itself (its processes and filesystem), not the host — mount what you need
+  to inspect. `live` still needs outbound network access to the target URL.
+
 ## Quick start
 
 ```bash

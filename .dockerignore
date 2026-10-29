@@ -1,0 +1,65 @@
+# Patterns are root-relative in Docker: a bare name only matches at the top
+# level, so anything that can appear in a subdirectory is prefixed with **/.
+
+# VCS / local machine
+.git
+**/.git
+.github
+.gitignore
+
+# Virtual environments
+.venv
+venv
+env
+**/.venv
+**/venv
+
+# Python caches and build artifacts
+__pycache__
+**/__pycache__
+*.py[cod]
+**/*.py[cod]
+*.egg-info
+**/*.egg-info
+.pytest_cache
+**/.pytest_cache
+.ruff_cache
+**/.ruff_cache
+build
+dist
+
+# Coverage output
+.coverage
+.coverage.*
+coverage.xml
+**/coverage.xml
+htmlcov
+
+# Scan output / reports (never ship analysis artifacts in an image)
+phpscan-report
+phpscan-out
+**/.phpscan-cache
+**/.phpscan-baseline.json
+**/*.sarif
+**/phpscan-evidence.json
+**/phpscan-fusion.json
+**/phpscan-report.json
+**/phpscan-report.md
+**/phpscan-report.sarif
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+**/.env
+**/.env.*
+
+# Editor / OS files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
