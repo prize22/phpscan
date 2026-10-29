@@ -141,6 +141,21 @@ Secrets, Dangerous Function (research leads).
 | timeline   | component exposure grading from composer files + an operator patch declaration |
 | correlate  | fuse a scan payload with an evidence store (live/host/history) |
 
+### Diagnostic logging
+
+Internal diagnostics (probe/connection failures, unreadable files,
+recoverable internal errors) go to **stderr** through a standard-library
+logger and never into report output. The default level is `WARNING`, so
+everyday runs stay quiet; raise it to see what the engine is doing:
+
+```bash
+phpscan --log-level DEBUG scan path/to/src
+```
+
+Levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. The option is
+accepted before or after the subcommand. Findings, terminal reports, JSON
+and SARIF output are unaffected by logging.
+
 ## Baseline / triage workflow (NEW in 0.2.0)
 
 Findings are fingerprinted line-free (category + file + function + sink +

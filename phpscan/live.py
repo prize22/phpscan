@@ -30,6 +30,9 @@ import urllib.parse
 import urllib.request
 
 from .evidence import Evidence, EvidenceStore
+from .log import get_logger, redact_url
+
+logger = get_logger("live")
 
 MAX_BODY = 512 * 1024
 MAX_HOPS = 5
@@ -132,6 +135,7 @@ def fetch(url, scope, method="GET"):
     if not scope.allows(url):
         raise URLOutOfScope("url outside scope (host allow-list): %s" % urllib.parse.urlsplit(url).hostname)
     if not scope.consume():
+        logger.debug("request budget exhausted; skipping %s", redact_url(url))
         return {"status": 0, "error": "budget exhausted", "url": url}
     try:
         req = urllib.request.Request(url, method=method)
@@ -158,8 +162,8 @@ def fetch(url, scope, method="GET"):
         body = b""
         try:
             body = exc.read(MAX_BODY)
-        except Exception:
-            pass
+        except Exception as body_exc:  # noqa: BLE001
+            logger.debug("could not read HTTP error body: %s", body_exc.__class__.__name__)
         return {
             "status": exc.code,
             "headers": {k.lower(): v for k, v in (exc.headers or {}).items()},
@@ -170,6 +174,7 @@ def fetch(url, scope, method="GET"):
     except (urllib.error.URLError, http.client.HTTPException, OSError, ValueError) as exc:
         name = exc.__class__.__name__
         msg = getattr(exc, "reason", exc)
+        logger.info("request failed: %s (%s: %s)", redact_url(url), name, msg)
         return {"status": 0, "error": "%s: %s" % (name, msg), "url": url}
 
 
@@ -359,7 +364,8 @@ def observer_resolve(scope, host):
     socket.setdefaulttimeout(scope.timeout)
     try:
         infos = socket.getaddrinfo(host, None)
-    except OSError:
+    except OSError as exc:
+        logger.info("dns resolution failed for %s (%s)", host, exc.__class__.__name__)
         return None
     finally:
         socket.setdefaulttimeout(old)
@@ -415,8 +421,8 @@ def _secrets_in(text):
     try:
         for r in scan(text, "http-body"):
             hits.append({"line": r["line"], "type": r["type"]})
-    except Exception:
-        pass
+    except Exception as exc:  # noqa: BLE001 - never fail a scan over the secret regexes
+        logger.debug("body secret scan skipped: %s", exc.__class__.__name__)
     # unquoted environment-style assignments (secrets.scan matches quoted only)
     for i, line in enumerate(text.splitlines(), 1):
         m = _ENV_ASSIGN.search(line)

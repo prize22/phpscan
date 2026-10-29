@@ -21,6 +21,9 @@ import re
 
 from . import discovery
 from .evidence import Evidence, EvidenceStore
+from .log import get_logger
+
+logger = get_logger("host")
 
 READ_CAP = 128 * 1024
 SKIP_DIRS = set(discovery.SKIP_DIRS) | {".idea", ".vscode", "__pycache__"}
@@ -104,7 +107,8 @@ def run_investigate(root, opts=None, now=None, store=None):
     for path in files:
         try:
             st = os.stat(path)
-        except OSError:
+        except OSError as exc:
+            logger.debug("cannot stat %s (%s); skipped", path, exc.__class__.__name__)
             continue
         mtime, size = st.st_mtime, st.st_size
         name = os.path.basename(path)
@@ -146,7 +150,8 @@ def run_investigate(root, opts=None, now=None, store=None):
     for base in _persistence_candidates(root):
         try:
             ok = os.path.exists(base)
-        except OSError:
+        except OSError as exc:
+            logger.debug("cannot check persistence path %s (%s)", base, exc.__class__.__name__)
             ok = False
         if ok:
             ev(
@@ -173,7 +178,11 @@ def walk_all(root, max_files=20000):
         cur = roots.pop(0)
         try:
             entries = list(os.scandir(cur))
-        except (PermissionError, FileNotFoundError):
+        except PermissionError:
+            logger.warning("directory not readable (permission denied): %s", cur)
+            continue
+        except FileNotFoundError as exc:
+            logger.debug("skipping unreadable directory %s (%s)", cur, exc.__class__.__name__)
             continue
         for e in entries:
             if e.is_symlink():
@@ -207,7 +216,8 @@ def _secret_scan_file(ev, path, rel, mtime, size, cap=READ_CAP):
         if data[:8].upper().startswith(b"\x89PNG\x0d\x0a\x1a\x0a") or b"\x00" in data[:64]:
             return
         hits = scan(data.decode("utf-8", "replace"), rel)
-    except OSError:
+    except OSError as exc:
+        logger.debug("secret scan skipped for %s (%s)", rel, exc.__class__.__name__)
         return
     for h in hits[:32]:
         ev(
@@ -224,7 +234,8 @@ def _sniff_php(path):
     """True when a non-PHP file still contains PHP code markers."""
     try:
         size = os.path.getsize(path)
-    except OSError:
+    except OSError as exc:
+        logger.debug("cannot sniff %s (%s)", path, exc.__class__.__name__)
         return False
     try:
         with open(path, "rb") as f:
@@ -234,7 +245,8 @@ def _sniff_php(path):
                 tail = f.read(16384)
             else:
                 tail = b""
-    except OSError:
+    except OSError as exc:
+        logger.debug("cannot read %s for php sniffing (%s)", path, exc.__class__.__name__)
         return False
     for blob in (head, tail):
         low = blob.lower()
@@ -289,6 +301,7 @@ def _scan_processes(ev, summary):
                 if cmdline:
                     _classify_process(ev, cmdline, pid, summary)
     except Exception as exc:  # noqa: BLE001
+        logger.warning("opt-in process enumeration failed (%s)", exc.__class__.__name__)
         summary["notes"].append("process enumeration failed (%s)" % exc.__class__.__name__)
         ev(
             "PROCESSES_UNCERTAIN",

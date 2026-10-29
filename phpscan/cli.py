@@ -21,7 +21,7 @@ import time
 
 from . import __version__
 from . import cache as C
-from . import defs, discovery, parser as P, util as U
+from . import defs, discovery, log as LOG, parser as P, util as U
 from .findings import Finding, stable_fingerprint
 from .validation import ValidationGate
 from . import reporting, surface as SURF, webshell as W
@@ -38,10 +38,15 @@ def parse_args(argv):
         description="Deterministic local PHP security static analyzer with an evidence-driven Validation Gate.",
     )
     ap.add_argument("--version", action="version", version="phpscan " + __version__)
+    log_help = "diagnostic log level (default: %s); logs go to stderr, never into report output" % LOG.DEFAULT_LEVEL
+    ap.add_argument("--log-level", choices=list(LOG.LEVELS), default=None, help=log_help)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--debug", action="store_true")
     common.add_argument("--verbose", "-v", action="store_true")
     common.add_argument("--quiet", "-q", action="store_true")
+    # SUPPRESS so an unparsed subcommand default never overwrites the global
+    # --log-level; the value given after the subcommand still wins.
+    common.add_argument("--log-level", choices=list(LOG.LEVELS), default=argparse.SUPPRESS, help=log_help)
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_scan = sub.add_parser("scan", help="scan a target", parents=[common])
@@ -870,6 +875,8 @@ def main(argv=None):
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(errors="replace")
     args = parse_args(argv if argv is not None else sys.argv[1:])
+    # Diagnostics only: findings and reports keep using stdout/stderr directly.
+    LOG.configure(getattr(args, "log_level", None) or LOG.DEFAULT_LEVEL)
     handlers = {
         "scan": do_scan,
         "research": do_research,
