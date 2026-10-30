@@ -80,7 +80,7 @@ docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" phpscan:local scan /w
   PHP — in a container or anywhere else. It parses source with tree-sitter
   and analyzes the abstract representation.
 - The image installs runtime dependencies only; development extras
-  (`pytest`, `pytest-cov`, `ruff`) are not present.
+  (`pytest`, `pytest-cov`, `ruff`, `pip-audit`) are not present.
 - Container-scoped commands such as `investigate` observe the container
   itself (its processes and filesystem), not the host — mount what you need
   to inspect. `live` still needs outbound network access to the target URL.

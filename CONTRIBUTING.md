@@ -21,6 +21,14 @@ Core principles:
 python -m pip install -e .[dev]
 python -m pytest tests -q
 phpscan benchmark eval
+python -m pip_audit -r requirements-lock.txt --strict
+```
+
+CI runs the same dependency audit against `requirements-lock.txt`. After
+changing dependencies, regenerate the lock with:
+
+```bash
+pip-compile --extra=dev --output-file=requirements-lock.txt pyproject.toml
 ```
 
 ## Code conventions

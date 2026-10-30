@@ -3,7 +3,8 @@
 #
 # Two stages so the final image carries only the runtime dependency set
 # (tree-sitter, tree-sitter-php, PyYAML) and never the development extras
-# (pytest, pytest-cov, ruff) declared under [project.optional-dependencies].dev.
+# (pytest, pytest-cov, ruff, pip-audit) declared under
+# [project.optional-dependencies].dev.
 #
 # The image deliberately contains NO PHP interpreter: phpscan parses PHP with
 # tree-sitter and must never execute target code.
