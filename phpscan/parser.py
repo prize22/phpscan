@@ -7,8 +7,11 @@ to extract names, string literals and guards.
 
 from __future__ import annotations
 
+from . import ast_collect as A
 from . import ir as I
 from . import util as U
+from .ast_collect import ParseCancelled
+from .ast_collect import _ANON_FN_NODES, _CLASS_NODES
 
 _CALL_KIND = {
     "function_call_expression": "function",
@@ -48,17 +51,6 @@ _SKIP = {
     "**",
 }
 
-_METHODS_NODE = ("method_declaration",)
-
-_CLASS_NODES = ("class_declaration", "trait_declaration", "interface_declaration", "enum_declaration")
-
-_ANON_FN_NODES = (
-    "anonymous_function",
-    "arrow_function",
-    "anonymous_function_creation_expression",
-    "arrow_function_creation_expression",
-)
-
 _PROP_EQ = "="
 
 
@@ -71,10 +63,6 @@ def node_text(node, src):
 def _norm_key(k):
     k = k.strip().strip("'\"")
     return k
-
-
-class ParseCancelled(Exception):
-    pass
 
 
 class Builder:
@@ -97,87 +85,14 @@ class Builder:
     def make_file(self, display=None, size=0, sha=""):
         file_ir = I.FileIR(path=self.path, display=display or self.path, sha256=sha, size=size)
         root = self.tree.root_node
-        program_nodes = []
-        if root.type == "document":
-            for c in root.children:
-                if c.type == "php":
-                    for cc in c.children:
-                        if cc.type == "program":
-                            program_nodes.append(cc)
-        elif root.type == "program":
-            program_nodes.append(root)
-        elif root.is_error:
+        progs, root_error = A.program_nodes(root)
+        if root_error:
             file_ir.parse_errors.append((1, "document-level parse error"))
             return file_ir
 
-        excluded = set()
-        classes = {}
+        excluded, classes = A.collect_declarations(self, progs, file_ir)
 
-        def collect(node, cur_class):
-            if node.type in _CLASS_NODES:
-                excluded.add(node.id)
-                cname = ""
-                parent = ""
-                for c in node.children:
-                    if c.type == "name":
-                        cname = self._text(c)
-                        break
-                for c in node.children:
-                    if c.type == "base_clause":
-                        for cc in c.children:
-                            if cc.type == "name":
-                                parent = self._text(cc)
-                                break
-                if cname:
-                    classes[cname] = True
-                    file_ir.class_names.append(cname)
-                    if parent:
-                        file_ir.class_parents[cname] = parent
-                to_scan = []
-                for c in node.children:
-                    if c.type in ("declaration_list", "enum_declaration_list", "declaration_list,"):
-                        to_scan.append(c)
-                for dl in to_scan:
-                    for cc in dl.children:
-                        if cc.type in _METHODS_NODE:
-                            try:
-                                fn = self._function(cc, cls=cname)
-                                if fn.name and fn.name != "{closure}":
-                                    file_ir.funcs.append(fn)
-                            except ParseCancelled:
-                                file_ir.truncated = True
-                for c in node.children:
-                    if c.type in _CLASS_NODES:
-                        self.depth += 1
-                        try:
-                            collect(c, cur_class)
-                        finally:
-                            self.depth -= 1
-                return
-            if node.type == "function_definition":
-                excluded.add(node.id)
-                try:
-                    fn = self._function(node, cls="")
-                    if fn.name:
-                        file_ir.funcs.append(fn)
-                except ParseCancelled:
-                    file_ir.truncated = True
-                return
-            for c in node.children:
-                collect(c, cur_class)
-
-        for prog in program_nodes:
-            try:
-                collect(prog, "")
-            except ParseCancelled:
-                file_ir.truncated = True
-            except RecursionError:
-                file_ir.truncated = True
-                import sys as _sys
-
-                _sys.setrecursionlimit(max(_sys.getrecursionlimit(), 3000))
-
-        for prog in program_nodes:
+        for prog in progs:
             try:
                 stmts = []
                 for c in prog.children:
@@ -196,7 +111,7 @@ class Builder:
 
         # record top-level syntax errors (tree-sitter ERROR nodes) so
         # structural validation can flag partial parses
-        for prog in program_nodes:
+        for prog in progs:
             for c in prog.children:
                 if c.is_error:
                     file_ir.parse_errors.append((c.start_point[0] + 1, "syntax error"))
@@ -205,7 +120,7 @@ class Builder:
         for fn in list(file_ir.funcs):
             self._extract_closures(fn, file_ir)
         file_ir.classes = list(classes.keys())
-        for prog in program_nodes:
+        for prog in progs:
             for c in prog.children:
                 if c.type in _INCLUDE_KIND:
                     operand = self._include_operand(c)
@@ -214,67 +129,10 @@ class Builder:
         return file_ir
 
     def _extract_closures(self, fn, file_ir):
-        found = []
-
-        def rec(n):
-            if n.type in _ANON_FN_NODES:
-                found.append(n)
-                for c in n.children:
-                    if c.type in _ANON_FN_NODES:
-                        rec(c)
-                return
-            for c in n.children:
-                rec(c)
-
-        for st in fn.body:
-            if st.node is not None:
-                rec(st.node)
-        closure_sts = []
-        for anon in found:
-            existing = [f for f in file_ir.funcs if f.closure and f.anon_id == anon.id]
-            if existing:
-                cf = existing[0]
-            else:
-                try:
-                    cf = self._function(anon, cls="{closure}")
-                except ParseCancelled:
-                    continue
-                cf.closure = True
-                cf.file = self.path
-                cf.anon_id = anon.id
-                file_ir.funcs.append(cf)
-            closure_sts.append(I.Stmt(kind="closure", line=cf.line, ret=cf))
-        fn.body.extend(closure_sts)
+        return A.extract_closures(self, fn, file_ir)
 
     def _attach_closures(self, node, stmts, file_ir):
-        found = []
-
-        def rec(n):
-            if n.type in _ANON_FN_NODES:
-                found.append(n)
-                for c in n.children:
-                    if c.type in _ANON_FN_NODES:
-                        rec(c)
-                return
-            for c in n.children:
-                rec(c)
-
-        rec(node)
-        for anon in found:
-            existing = [f for f in file_ir.funcs if f.closure and f.anon_id == anon.id]
-            if not existing:
-                try:
-                    cf = self._function(anon, cls="{closure}")
-                except ParseCancelled:
-                    continue
-                cf.closure = True
-                cf.file = self.path
-                cf.anon_id = anon.id
-                file_ir.funcs.append(cf)
-            else:
-                cf = existing[0]
-            st = I.Stmt(kind="closure", line=cf.line, ret=cf)
-            stmts.append(st)
+        return A.attach_closures(self, node, stmts, file_ir)
 
     def _include_operand(self, node):
         exprs = []
