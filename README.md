@@ -22,6 +22,40 @@ python -m pip install -e .
 
 Requirements: Python 3.9+; deps: `tree-sitter`, `tree-sitter-php`, `PyYAML`.
 
+## Configuration and infrastructure
+
+PHPSCAN is a command-line, local-first PHP security-analysis tool, not a hosted
+service or infrastructure platform. It has no database, API server, background
+service, cloud dependency, or persistent server-side backend.
+
+Static analysis needs only Python 3.9+ and the three runtime packages above.
+PHPSCAN does not load a `.env` file or define project-specific environment
+variables, and it requires no credential configuration. Behavior is selected
+with CLI flags and optional local files, such as a YAML rule override
+(`phpscan rules validate FILE`), a suppression baseline
+(`.phpscan-baseline.json`), or a patch declaration passed to
+`phpscan timeline`. References to `.env` in output are target artifacts that
+PHPSCAN detects, not PHPSCAN configuration.
+
+Optional features have additional environment needs, not configuration:
+
+- `phpscan live URL` makes outbound HTTP(S) requests to an operator-authorized
+  target. Scope, timeout, and request budget are CLI flags (`--allow-host`,
+  `--timeout`, `--max-requests`); TLS uses Python's default certificate
+  verification. PHPSCAN reads no environment variables directly, but the
+  standard library may honor optional process-level proxy/TLS settings such as
+  `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `SSL_CERT_FILE`, or `SSL_CERT_DIR`.
+  None are required, and no `.env` file is loaded. No cookies, credentials, or
+  environment secrets are required.
+- `phpscan investigate ROOT` reads the local filesystem. `--processes` is an
+  explicit opt-in that enumerates interpreter processes; it does not contact a
+  remote service.
+- Docker is optional packaging for the same CLI. The image runs as non-root,
+  ships no PHP interpreter, and needs outbound network access only for `live`.
+
+Development and CI dependencies (`pytest`, `pytest-cov`, `ruff`, `mypy`,
+`pip-audit`) are part of the `dev` extra and are not runtime requirements.
+
 ## Docker
 
 Build a self-contained runtime image (no local Python install required):

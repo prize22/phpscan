@@ -2,7 +2,9 @@
 
 Core principles:
 
-1. **Local-only.** No network calls, no telemetrics, no auto-updates.
+1. **Local-first.** Static analysis makes no network calls; optional `live`
+   observation contacts only operator-authorized targets. No telemetry, no
+   auto-updates, no credential upload.
 2. **Determinism.** Every output (IDs, fingerprints, ordering, JSON) is
    deterministic. If a test shows nondeterminism, the code is wrong.
 3. **Never execute target PHP.** The parser runs in the Python interpreter
@@ -15,7 +17,10 @@ Core principles:
    (a) unit tests in `tests/`, (b) at least one vulnerable + one clean
    corpus fixture under `eval/`.
 
-## Env
+## Local development
+
+PHPSCAN is configured through CLI flags and local files. It does not read
+environment variables directly or require a `.env` file.
 
 ```bash
 python -m pip install -e .[dev]

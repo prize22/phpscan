@@ -115,4 +115,5 @@ including which exact stage rejected and why.
 - Suppression: `baseline` writes `.phpscan-baseline.json` (stable
   fingerprints + reasons); scan applies it, `--new-only` filters.
 
-No network activity in any module except the CLI help URLs in docs.
+Static analysis performs no network activity. The optional `live` command
+contacts only operator-scoped HTTP(S) targets; see `docs/live-analysis.md`.
