@@ -56,6 +56,40 @@ jobs:
       - name: Audit locked dependencies
         run: python -m pip_audit -r requirements-lock.txt --strict --progress-spinner off
 
+  locked:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes -r requirements-lock.txt
+      - name: Install phpscan without dependency resolution
+        run: python -m pip install --no-deps -e .
+      - name: Verify environment consistency
+        run: python -m pip check
+      - name: Unit tests
+        run: python -m pytest tests -q
+      - name: Network tests
+        run: python -m pytest tests -q -m network
+      - name: Benchmark corpus
+        run: phpscan benchmark eval
+      - name: Verify installed version
+        run: |
+          python - <<'PY'
+          import subprocess
+
+          import phpscan
+
+          out = subprocess.check_output(["phpscan", "--version"], text=True).strip()
+          expected = "phpscan " + phpscan.__version__
+          assert out == expected, (out, expected)
+          print(out)
+          PY
+
   sarif:
     needs: test
     runs-on: ubuntu-latest
