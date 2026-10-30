@@ -20,7 +20,49 @@ webshell/backdoor correlation, and honest, auditable output.
 python -m pip install -e .
 ```
 
-Requirements: Python 3.9+; deps: `tree-sitter`, `tree-sitter-php`, `PyYAML`.
+Requirements: Python 3.11+; runtime deps: `tree-sitter`, `tree-sitter-php`,
+`PyYAML`.
+
+## Development
+
+PHPSCAN requires Python 3.11 or newer. Use Python 3.11 (the minimum supported
+version) when regenerating the lockfile so the resolved set matches CI.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: source .venv/Scripts/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+python -m pytest -q                # unit suite
+python -m pytest -q -m network     # local HTTP integration tests
+python -m ruff check .
+python -m mypy phpscan
+phpscan benchmark eval
+```
+
+### Locked dependencies
+
+`requirements-lock.txt` pins the full runtime and development dependency set
+and includes `--hash` values. The `locked` CI job installs exactly this set,
+runs `pip check`, the unit and network suites, the benchmark, and verifies the
+installed version. Reproduce that environment with:
+
+```bash
+python -m pip install --require-hashes -r requirements-lock.txt
+python -m pip install --no-deps -e .
+python -m pip check
+```
+
+Regenerate the lockfile with the pinned `pip-tools` (installed by the `dev`
+extra) after changing dependencies:
+
+```bash
+pip-compile --extra=dev --allow-unsafe --generate-hashes --newline=lf \
+    --output-file requirements-lock.txt pyproject.toml
+```
+
+Keep regeneration on Python 3.11. `pip-compile` preserves existing pins, so
+only the dependencies you changed are re-resolved unless you pass `--upgrade`.
 
 ## Configuration and infrastructure
 
@@ -28,7 +70,7 @@ PHPSCAN is a command-line, local-first PHP security-analysis tool, not a hosted
 service or infrastructure platform. It has no database, API server, background
 service, cloud dependency, or persistent server-side backend.
 
-Static analysis needs only Python 3.9+ and the three runtime packages above.
+Static analysis needs only Python 3.11+ and the three runtime packages above.
 PHPSCAN does not load a `.env` file or define project-specific environment
 variables, and it requires no credential configuration. Behavior is selected
 with CLI flags and optional local files, such as a YAML rule override

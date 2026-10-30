@@ -20,27 +20,50 @@ Core principles:
 ## Local development
 
 PHPSCAN is configured through CLI flags and local files. It does not read
-environment variables directly or require a `.env` file.
+environment variables directly or require a `.env` file. It requires
+Python 3.11 or newer; regenerate the lockfile on Python 3.11 so the resolved
+set matches CI.
 
 ```bash
-python -m pip install -e .[dev]
+python -m venv .venv
+source .venv/bin/activate          # Windows: source .venv/Scripts/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 python -m pytest tests -q
+python -m pytest tests -q -m network
+python -m ruff check .
 python -m mypy phpscan
 phpscan benchmark eval
 python -m pip_audit -r requirements-lock.txt --strict
 ```
 
-CI runs the same dependency audit against `requirements-lock.txt`. After
-changing dependencies, regenerate the lock with:
+CI runs the same dependency audit against `requirements-lock.txt` and a
+`locked` job installs that file with `--require-hashes`, runs `pip check`,
+the unit and network suites, the benchmark, and verifies `phpscan --version`.
+
+Install the locked environment directly with:
 
 ```bash
-pip-compile --extra=dev --output-file=requirements-lock.txt pyproject.toml
+python -m pip install --require-hashes -r requirements-lock.txt
+python -m pip install --no-deps -e .
+python -m pip check
 ```
+
+After changing dependencies, regenerate the lock with the pinned `pip-tools`
+(from the `dev` extra):
+
+```bash
+pip-compile --extra=dev --allow-unsafe --generate-hashes --newline=lf \
+    --output-file requirements-lock.txt pyproject.toml
+```
+
+The command preserves existing pins; pass `--upgrade` only when you intend to
+re-resolve the whole set. Commit `pyproject.toml` and `requirements-lock.txt`
+together.
 
 ## Code conventions
 
-- Python 3.9+ compatible syntax (no `match`, keep `__slots__` light);
-  dataclasses for IR.
+- Python 3.11+ compatible syntax; dataclasses for IR.
 - Modules may not import from CLI.
 - Registry edits live in `defs.py`, never inline constants scattered
   through engine code.

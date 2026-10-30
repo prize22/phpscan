@@ -7,7 +7,7 @@ name = "phpscan"
 version = "0.4.0"
 description = "PHP Security Research Engine - evidence-driven static analysis for PHP codebases"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "phpscan contributors" }]
 keywords = ["php", "security", "sast", "taint-analysis", "webshell", "scanner"]
@@ -30,12 +30,15 @@ dev = [
     "pytest>=7.0",
     "pytest-cov",
     "ruff==0.12.5",
-    # Newest mypy line that still supports the project's Python 3.9 floor.
+    # Pinned toolchain: requirements-lock.txt is generated from these exact
+    # versions. Update deliberately and regenerate the lock in the same change.
     "mypy==1.19.1",
-    # Newest PyYAML stubs that still support the project's Python 3.9 floor.
     "types-PyYAML==6.0.12.20250915",
-    # Newest pip-audit line that still supports the project's Python 3.9 floor.
     "pip-audit==2.9.0",
+    "pip-tools==7.6.2",
+    # pytest's Windows-only transitive dependency, declared explicitly so the
+    # single lockfile resolves to the same package set on every platform.
+    "colorama==0.4.6",
 ]
 
 [project.scripts]
@@ -46,10 +49,10 @@ include = ["phpscan*"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py311"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 check_untyped_defs = true
 warn_unused_configs = true
 warn_redundant_casts = true
