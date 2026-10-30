@@ -17,7 +17,7 @@ from __future__ import annotations
 
 
 def _by_fp(findings):
-    out = {}
+    out: dict[str, list] = {}
     for f in findings or []:
         fp = getattr(f, "fingerprint", "") or ""
         out.setdefault(fp, []).append(f)

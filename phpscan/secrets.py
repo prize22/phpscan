@@ -45,10 +45,10 @@ FB_BLACKLIST = (
 def shannon(s):
     if not s:
         return 0.0
-    freq = {}
+    freq: dict[str, int] = {}
     for ch in s:
         freq[ch] = freq.get(ch, 0) + 1
-    bits = 0
+    bits = 0.0
     for c in freq.values():
         p = c / len(s)
         bits -= p * math.log2(p)

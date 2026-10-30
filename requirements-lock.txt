@@ -28,6 +28,8 @@ idna==3.20
     # via requests
 iniconfig==2.3.1
     # via pytest
+librt==0.16.0
+    # via mypy
 license-expression==30.4.4
     # via cyclonedx-python-lib
 markdown-it-py==4.2.0
@@ -36,6 +38,10 @@ mdurl==0.1.2
     # via markdown-it-py
 msgpack==1.2.4
     # via cachecontrol
+mypy==1.19.1
+    # via phpscan (pyproject.toml)
+mypy-extensions==1.1.0
+    # via mypy
 packageurl-python==0.17.6
     # via cyclonedx-python-lib
 packaging==26.3
@@ -43,6 +49,8 @@ packaging==26.3
     #   pip-audit
     #   pip-requirements-parser
     #   pytest
+pathspec==1.1.1
+    # via mypy
 pip-api==0.0.35
     # via pip-audit
 pip-audit==2.9.0
@@ -87,6 +95,10 @@ tree-sitter==0.26.0
     # via phpscan (pyproject.toml)
 tree-sitter-php==0.25.1
     # via phpscan (pyproject.toml)
+types-pyyaml==6.0.12.20250915
+    # via phpscan (pyproject.toml)
+typing-extensions==4.16.0
+    # via mypy
 urllib3==2.8.0
     # via requests
 

@@ -110,12 +110,12 @@ def terminal_report(payload):
     s = payload.get("stats") or {}
     if s:
         print("")
-    by_status = {}
+    by_status: dict[str, int] = {}
     for f in findings:
         by_status.setdefault(f.status, 0)
         by_status[f.status] += 1
     print("Findings by status: " + ", ".join("%s=%s" % (k, v) for k, v in sorted(by_status.items())))
-    by_sev = {}
+    by_sev: dict[str, int] = {}
     for f in findings:
         by_sev.setdefault(f.severity, 0)
         by_sev[f.severity] += 1

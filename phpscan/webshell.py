@@ -174,7 +174,7 @@ EXECCAT = {
 
 def engine_signal_summary(flow):
     """Dedupes flow.signals into (category, sample) model."""
-    out = {}
+    out: dict[str, str] = {}
     for sig in flow.signals:
         s = sig.get("sig", "")
         d = sig.get("detail", "")

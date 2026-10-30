@@ -43,7 +43,7 @@ def collect_installed(target):
     from . import discovery
 
     skip = set(discovery.SKIP_DIRS)
-    out = {}
+    out: dict[str, set[str]] = {}
     root = target if os.path.isdir(target) else os.path.dirname(target) or "."
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip and not os.path.islink(os.path.join(dirpath, d))]
@@ -141,7 +141,7 @@ def _is_exact_version(text):
 def grade(decl_components, installed):
     """Grade installed components against declaration. Returns (entries, counts)."""
     entries = []
-    counts = {}
+    counts: dict[str, int] = {}
     by_name = {str(c.get("name", "")).lower(): c for c in decl_components}
     for name, versions in sorted(installed.items()):
         for ver in versions or [""]:

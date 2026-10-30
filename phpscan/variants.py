@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from typing import Any
 
 from . import defs as D
 
@@ -71,7 +72,7 @@ def genome_id(pattern):
 
 def analyze(findings, rejected):
     """Groups findings + rejected candidates into genome records."""
-    genomes = {}
+    genomes: dict[str, dict[str, Any]] = {}
 
     def record(gid, pattern, kind, ref):
         g = genomes.get(gid)

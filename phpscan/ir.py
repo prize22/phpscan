@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 
-@dataclass(slots=True)
+@dataclass
 class VarRef:
     """A concrete variable reference: $base[path...] or $base->prop..."""
 
@@ -27,19 +27,19 @@ class VarRef:
         return self.base.startswith("_")
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprVar:
     ref: VarRef
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprConst:
     kind: str  # 'string' | 'num' | 'const' | 'bool' | 'other'
     value: Any
     raw: str = ""
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprStrLit:
     """String literal with optional interpolation parts."""
 
@@ -47,20 +47,20 @@ class ExprStrLit:
     parts: tuple = ()  # ('str', text) | ('var', VarRef) | ('expr', raw)
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprBin:
     op: str
     left: Any
     right: Any
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprCast:
     cast_type: str
     operand: Any
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprSeqAssign:
     """Assignment used as an expression: `while ($row = f())`."""
 
@@ -68,19 +68,19 @@ class ExprSeqAssign:
     value: Any
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprArr:
     items: list  # list of (key|None, Expr)
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprCond:
     cond: Any
     then: Any
     other: Any
 
 
-@dataclass(slots=True)
+@dataclass
 class CallTarget:
     """Resolved textual description of a call site."""
 
@@ -89,7 +89,7 @@ class CallTarget:
     receiver: Optional[str] = None
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprCall:
     target: CallTarget
     args: list  # list of (key|None, Expr)
@@ -98,7 +98,7 @@ class ExprCall:
     in_interp: bool = False
 
 
-@dataclass(slots=True)
+@dataclass
 class ExprOther:
     raw: str
     vars: list = field(default_factory=list)  # VarRefs seen inside
@@ -107,7 +107,7 @@ class ExprOther:
     closure_line: int = 0  # set when expression is `function (...) {...}`
 
 
-@dataclass(slots=True)
+@dataclass
 class LV:
     """Assignment target."""
 
@@ -141,13 +141,13 @@ class Stmt:
     # closure handled inline
 
 
-@dataclass(slots=True)
+@dataclass
 class Param:
     name: str
     by_ref: bool = False
 
 
-@dataclass(slots=True)
+@dataclass
 class FuncIR:
     name: str
     params: list = field(default_factory=list)  # list[Param]

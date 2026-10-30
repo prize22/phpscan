@@ -7,6 +7,8 @@ by the Validation Gate.
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 LVL_NONE = 0
 LVL_INDIRECT = 1
 LVL_TAINTED = 2
@@ -76,7 +78,15 @@ SERVER_SENSITIVE_KEYS = {
     "request_body",
 }
 
-SINKS = {
+class SinkSpec(TypedDict):
+    funcs: dict[str, int]
+    method_args: dict[str, int]
+    cwe: str
+    owasp: str
+    base_severity: str
+
+
+SINKS: dict[str, SinkSpec] = {
     "Command Injection": {
         "funcs": {
             "exec": 0,

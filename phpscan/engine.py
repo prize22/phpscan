@@ -530,7 +530,7 @@ class FuncFlow:
             outs.append(self.state)
             if ge == GUARD_TRUE:
                 # branch always taken; skip remaining (dead) branches
-                skip_elseif = "stop"
+                skip_elseif = True
                 outs = [branch]
                 break
             self.state = main
@@ -1370,7 +1370,7 @@ class FuncFlow:
 
 
 def _merge_states(states):
-    merged = {}
+    merged: dict[str, object] = {}
     for s in states:
         for k, v in s.items():
             merged[k] = _merge_val(merged.get(k), v)

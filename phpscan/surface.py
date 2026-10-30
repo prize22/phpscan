@@ -5,14 +5,14 @@ from __future__ import annotations
 
 def compute(findings, engine, sources_depth=12):
     files = sorted({f.file for f in findings})
-    src_map = {}
+    src_map: dict[str, int] = {}
     for f in findings:
         src = f.source.get("var", "")
         if src:
             key = src.split("[")[0].strip("$")
             c = src_map.get(key, 0)
             src_map[key] = c + 1
-    cats = {}
+    cats: dict[str, int] = {}
     for f in findings:
         if f.status == "REJECTED":
             continue

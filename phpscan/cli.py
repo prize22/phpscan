@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+from typing import Optional
 
 from . import __version__
 from . import cache as C
@@ -274,7 +275,7 @@ def _apply_inline_suppressions(findings, files):
     a reason is invalid and ignored, so '// phpscan-ignore' alone cannot
     hide a finding."""
     wanted = {f.file for f in findings}
-    marks = {}
+    marks: dict[tuple[str, int], Optional[tuple[str, str]]] = {}
     for path in files:
         if path in wanted:
             src = U.read_project_file(path)
@@ -313,7 +314,7 @@ def _flood_control(findings, cap):
     lowest line numbers survive; the rest are attributed honestly."""
     if not cap or cap < 0:
         return
-    groups = {}
+    groups: dict[tuple[str, str], list] = {}
     for f in findings:
         groups.setdefault((f.file, f.rule_id), []).append(f)
     for (file, rule), group in groups.items():
@@ -785,7 +786,7 @@ def do_investigate(args):
 
 def _host_text(summary, store):
     lines = ["root: %s" % summary["root"], "files_seen: %s" % summary["files_seen"], "records: %s" % summary["records"]]
-    cats = {}
+    cats: dict[str, int] = {}
     for r in store.records:
         cats[r.category] = cats.get(r.category, 0) + 1
     for c in sorted(cats):

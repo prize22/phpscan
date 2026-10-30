@@ -7,6 +7,8 @@ to extract names, string literals and guards.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from . import ast_collect as A
 from . import ir as I
 from . import util as U
@@ -529,9 +531,9 @@ class Builder:
             blk.stmts = self._block_content(node)
             return [blk]
         if t == "switch_block":
-            stmts = I.Stmt(kind="block", block_kind="switchbody", node=node, line=line)
-            stmts.stmts = self._block_content(node)
-            return [stmts]
+            blk = I.Stmt(kind="block", block_kind="switchbody", node=node, line=line)
+            blk.stmts = self._block_content(node)
+            return [blk]
         if t == "try_statement":
             stmt = I.Stmt(kind="block", block_kind="try", node=node, line=line)
             for c in node.children:
@@ -632,7 +634,7 @@ class Builder:
         return None
 
     def _args(self, args_node):
-        args = []
+        args: list[tuple[Optional[str], object]] = []
         if args_node is None:
             return args
         for c in args_node.children:
@@ -682,7 +684,7 @@ class Builder:
                 return I.ExprVar(ref=ref)
             if t == "dynamic_variable_name":
                 raw = self._text(node)
-                inner = []
+                inner: list[I.VarRef] = []
                 for c in node.children:
                     if c.type == "$":
                         continue
@@ -690,7 +692,7 @@ class Builder:
                     if isinstance(e, I.ExprVar):
                         inner.append(e.ref)
                     else:
-                        inner = None
+                        inner = []
                         break
                 return I.ExprOther(raw=raw, vars=inner if inner else [])
             if t == "subscript_expression":
@@ -1139,7 +1141,7 @@ def _php_unescape(body):
 
 
 def _scan_interp(inner):
-    parts = []
+    parts: list[tuple[str, object]] = []
     buf = []
     i = 0
     n = len(inner)

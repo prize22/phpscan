@@ -173,7 +173,8 @@ def walk_all(root, max_files=20000):
     """Symlink-safe, deterministic walk of every file (not only PHP)."""
     if os.path.isfile(root):
         return [root]
-    out, roots = [], [root]
+    out: list[str] = []
+    roots = [root]
     while roots and len(out) < max_files:
         cur = roots.pop(0)
         try:

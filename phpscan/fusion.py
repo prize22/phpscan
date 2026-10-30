@@ -20,6 +20,7 @@ the reason, so a reviewer can undo any link.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 SUPPORT_ORDER = {"none": 0, "SUSPECTED": 1, "OBSERVED": 2, "EXPOSED": 3}
 
@@ -37,7 +38,7 @@ def fuse(scan_payload, evidence_store=None, timeline_entries=None):
 
     # fingerprint evidence for quick reflection
     live_routes = []  # (path, record)
-    host_paths = {}
+    host_paths: dict[str, list[Any]] = {}
     exposure = []
     for r in getattr(store, "records", []) or []:
         cat = r.category
@@ -77,10 +78,10 @@ def fuse(scan_payload, evidence_store=None, timeline_entries=None):
         if "/vendor/" in "/" + ffile:
             idx = ffile.find("/vendor/")
             vendor_prefix = ffile[idx + 8 :]
-        name = _vendor_name(vendor_prefix) if vendor_prefix else None
-        if name:
+        vendor_name = _vendor_name(vendor_prefix) if vendor_prefix else None
+        if vendor_name:
             for rec in exposure:
-                if name.startswith((rec.target or "").lower()):
+                if vendor_name.startswith((rec.target or "").lower()):
                     matched.append((rec, "component exposure grade '%s'" % (rec.value or {}).get("status")))
 
         if matched:
@@ -112,7 +113,7 @@ def fuse(scan_payload, evidence_store=None, timeline_entries=None):
                 }
             )
 
-    counts = {}
+    counts: dict[str, int] = {}
     for v in verifications:
         counts[v["support"]] = counts.get(v["support"], 0) + 1
     summary = {

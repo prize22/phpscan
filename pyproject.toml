@@ -30,6 +30,10 @@ dev = [
     "pytest>=7.0",
     "pytest-cov",
     "ruff==0.12.5",
+    # Newest mypy line that still supports the project's Python 3.9 floor.
+    "mypy==1.19.1",
+    # Newest PyYAML stubs that still support the project's Python 3.9 floor.
+    "types-PyYAML==6.0.12.20250915",
     # Newest pip-audit line that still supports the project's Python 3.9 floor.
     "pip-audit==2.9.0",
 ]
@@ -43,6 +47,13 @@ include = ["phpscan*"]
 [tool.ruff]
 line-length = 120
 target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+check_untyped_defs = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

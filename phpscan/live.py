@@ -116,7 +116,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-_OpenerCache = {}
+_OpenerCache: dict[str, object] = {}
 OpenerClass = None
 
 
@@ -221,7 +221,7 @@ def run_passive(
     scope = scope or Scope()
     parsed = urllib.parse.urlsplit(base_url)
 
-    def rec(category, target, value, conf=0.7, uncertainty=(), tags=(), evid=None):
+    def rec(category, target, value, conf=0.7, uncertainty=(), tags=(), evid=None, source_ref=None):
         e = Evidence(
             "live",
             category,
@@ -232,6 +232,7 @@ def run_passive(
             uncertainty=list(uncertainty),
             tags=list(tags),
             evidence=evid or {},
+            source_ref=source_ref,
         )
         store.add(e)
         return e
@@ -404,7 +405,7 @@ def _follow_redirects(base_url, location, scope, rec, summary, hops=0):
 def _finish(summary, store, scope=None):
     summary["requests"] = scope.spent if scope else 0
     summary["records"] = len(store)
-    cats = {}
+    cats: dict[str, int] = {}
     for r in store.records:
         cats[r.category] = cats.get(r.category, 0) + 1
     summary["records_by_category"] = dict(sorted(cats.items()))

@@ -98,7 +98,7 @@ def configure(level=DEFAULT_LEVEL):
     handler = logging.StreamHandler()  # binds the current sys.stderr
     handler.setLevel(numeric)
     handler.setFormatter(logging.Formatter(FORMAT, DATEFMT))
-    handler._phpscan_cli = True  # ownership marker; only configure() removes it
+    setattr(handler, "_phpscan_cli", True)  # ownership marker; only configure() removes it
     logger.addHandler(handler)
     return logger
 

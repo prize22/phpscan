@@ -29,14 +29,14 @@ def _chain_join(chain, steps):
     return out
 
 
-def expand_forwarding(cb_idx, spec, nargs) -> list:
+def expand_forwarding(cb_idx, spec, nargs) -> list[tuple[int, int]]:
     """Expand a defs forwarding map into concrete (outer, param) pairs."""
-    pairs = []
+    pairs: list[tuple[int, int]] = []
     for outer, param in spec:
-        if outer == D.REST:
-            pairs.extend((j, param) for j in range(cb_idx + 1, nargs))
-        else:
+        if isinstance(outer, int):
             pairs.append((outer, param))
+        else:
+            pairs.extend((j, param) for j in range(cb_idx + 1, nargs))
     return pairs
 
 

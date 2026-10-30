@@ -21,6 +21,7 @@ Scores/confidence drive severity; every stage result is kept.
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from . import cfg
 from . import proof as proofmod
@@ -138,7 +139,7 @@ def validate_candidate(cand, file_meta, strict_agree, src_lines=None):
     """Runs all 8 stages. Returns (finding_or_None, rejected_record)."""
     stages = []
     notes = []
-    facts = {}
+    facts: dict[str, Any] = {}
     cat = getattr(cand, "cat", "")
 
     def add(stage, result, note=""):
@@ -407,7 +408,7 @@ class ValidationGate:
     def run(self, engine):
         findings = []
         rejected = []
-        by_fp = {}
+        by_fp: dict[str, Finding] = {}
         dup_count = 0
         sup = self.options.get("suppressed") or set()
         sup_reasons = self.options.get("suppression_reasons") or {}

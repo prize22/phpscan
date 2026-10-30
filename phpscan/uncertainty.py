@@ -35,12 +35,12 @@ def collect(engine, findings, rejected=None, extra=None):
     """extra: optional iterable of (code, file, line, detail) produced by
     non-static layers (live/host/history).  Appended as first-class
     UNCERTAIN_* items so downstream rendering/tests see one uniform map."""
-    items = []
-    codes = {}
-    per_file = {}
+    items: list[dict[str, object]] = []
+    codes: dict[str, int] = {}
+    per_file: dict[str, list[dict[str, object]]] = {}
 
     def add(code, file="", line=0, detail=""):
-        item = {"code": code, "file": file or "", "line": int(line or 0), "detail": detail}
+        item: dict[str, object] = {"code": code, "file": file or "", "line": int(line or 0), "detail": detail}
         items.append(item)
         codes[code] = codes.get(code, 0) + 1
         if file:

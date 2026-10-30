@@ -20,6 +20,7 @@ Core principles:
 ```bash
 python -m pip install -e .[dev]
 python -m pytest tests -q
+python -m mypy phpscan
 phpscan benchmark eval
 python -m pip_audit -r requirements-lock.txt --strict
 ```

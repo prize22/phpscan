@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import Any
 
 RULE_PREFIX = {
     "SQL Injection": "php.sqli",
@@ -185,7 +186,7 @@ def load_findings(path):
 
 
 def sarif_output(run_meta, findings):
-    rules_map = {}
+    rules_map: dict[str, dict[str, Any]] = {}
     results = []
     for f in findings:
         rules_map.setdefault(

@@ -6,6 +6,7 @@ import json
 import os
 import re
 import time
+from typing import Any, Optional
 
 from . import cli
 
@@ -20,7 +21,7 @@ def load_manifest(corpus_dir):
 
 def source_comments_expect(file_path):
     """Per-file expected categories via 'phpscan: expect:' comments."""
-    exp = []
+    exp: list[Optional[str]] = []
     with open(file_path, "rb") as f:
         text = f.read().decode("utf-8", errors="replace")
     for m in re.finditer(
@@ -49,7 +50,7 @@ def run_corpus(corpus_dir, out=None):
     """
     manifest = load_manifest(corpus_dir)
     tp = fp = fn = 0
-    cat_stats = {}
+    cat_stats: dict[str, dict[str, int]] = {}
     rows = []
     t0 = time.time()
     for d, is_vul in (
@@ -65,7 +66,7 @@ def run_corpus(corpus_dir, out=None):
         # calls (controller -> helper) resolve inside one engine run.
         if os.path.basename(d) == "framework":
             payload, engine, files = _scan_one(d, corpus_dir)
-            by_file = {}
+            by_file: dict[str, list[dict[str, Any]]] = {}
             for fnd in payload["findings"]:
                 by_file.setdefault(os.path.basename(fnd.get("file", "")), []).append(fnd)
             for name in sorted(os.listdir(d)):
