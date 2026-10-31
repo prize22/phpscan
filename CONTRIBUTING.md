@@ -58,8 +58,9 @@ pip-compile --extra=dev --allow-unsafe --generate-hashes --newline=lf \
 ```
 
 The command preserves existing pins; pass `--upgrade` only when you intend to
-re-resolve the whole set. Commit `pyproject.toml` and `requirements-lock.txt`
-together.
+re-resolve the whole set. The `# via` annotations are host-specific, so
+regenerate on Linux with Python 3.11 for a byte-identical file. Commit
+`pyproject.toml` and `requirements-lock.txt` together.
 
 ## Code conventions
 

@@ -63,6 +63,9 @@ pip-compile --extra=dev --allow-unsafe --generate-hashes --newline=lf \
 
 Keep regeneration on Python 3.11. `pip-compile` preserves existing pins, so
 only the dependencies you changed are re-resolved unless you pass `--upgrade`.
+The `# via` annotations are host-specific: regenerate on Linux (the locked CI
+platform) for a byte-identical file. On other platforms the pins and hashes are
+unchanged, but Windows-only annotation lines differ.
 
 ## Configuration and infrastructure
 
